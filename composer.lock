@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "ebda7ecfcbd1608b912b702a8f2e35ce",
-    "content-hash": "fdeed79980617a84024ca590540e8c56",
+    "hash": "9b98902f8ad85dea3a77320314c4e346",
+    "content-hash": "9d0bd486afc3cc66d12cb18c94b09409",
     "packages": [
         {
             "name": "smalot/pdfparser",
@@ -120,6 +120,8 @@
     "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
+    "platform": {
+        "ext-fileinfo": "*"
+    },
     "platform-dev": []
 }
