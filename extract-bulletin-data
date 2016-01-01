@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 
-// This takes a directory of PDF files, and extracts the relevant data, and outputs a CSV file
+// This takes a (potentially nested) directory of PDF files, and extracts the relevant data, and outputs a CSV file
 
 require __DIR__ . '/vendor/autoload.php';
 
@@ -23,14 +23,25 @@ $mime_type_parser = new \finfo(FILEINFO_MIME_TYPE);
 $parser = new \Smalot\PdfParser\Parser();
 
 $pdf_contents = [];
-foreach (new \DirectoryIterator($service_bulletin_directory) as $service_bulletin_file) {
-    
-    if ($service_bulletin_file->isDot()) continue;
 
-    if ($service_bulletin_file->getType() != 'file'
-        OR $service_bulletin_file->getExtension() != 'pdf'
+foreach (
+    new \RecursiveIteratorIterator (
+        new \RecursiveDirectoryIterator (
+            $service_bulletin_directory, 
+            \RecursiveDirectoryIterator::SKIP_DOTS
+        )
+    ) 
+    as $service_bulletin_file) {
+
+    // skipping hidden files
+    if ($service_bulletin_file->getFilename()[0] == '.') continue;
+
+    // check if readable, is a file, has pdf extension, and correct mimetype
+    if (!$service_bulletin_file->isFile() 
+        OR !$service_bulletin_file->isReadable() 
+        OR $service_bulletin_file->getExtension() != 'pdf' 
         OR $mime_type_parser->file($service_bulletin_file->getPathname()) != 'application/pdf') {
-        echo "Skipping '{$service_bulletin_file->getFilename()}', not a PDF file.";
+        echo "Skipping '{$service_bulletin_file->getFilename()}', it is not a PDF file or it is not readable.";
         echo "\n";
         continue;
     }
@@ -40,25 +51,26 @@ foreach (new \DirectoryIterator($service_bulletin_directory) as $service_bulleti
     $first_page_text = $first_page->getText();
 
     preg_match('/^NUMBER: *(.+) */m', $first_page_text, $matches);
-    $bulletin_number = $matches[1];
+    $bulletin_number = (isset($matches[1]) ? $matches[1] : null);
 
     preg_match('/^ISSUED: *(.+) */m', $first_page_text, $matches);
-    $bulletin_issued_date = $matches[1];
+    $bulletin_issued_date = (isset($matches[1]) ? $matches[1] : null);
 
     preg_match('/^REVISED: *(.+) */m', $first_page_text, $matches);
-    $bulletin_revised_date = $matches[1];
+    $bulletin_revised_date = (isset($matches[1]) ? $matches[1] : null);
 
     preg_match('/^MODEL\(S\): *(.+) */m', $first_page_text, $matches);
-    $bulletin_model = $matches[1];
+    $bulletin_model = (isset($matches[1]) ? $matches[1] : null);
 
     preg_match('/^SUBJECT: *([\S\s\n]+?)\n^(?:PRODUCT SAFETY|—REVISION NOTICE—|.+:)/m', $first_page_text, $matches);
-    $bulletin_subject = preg_replace('/\n/', ' ' , $matches[1]);
+    $bulletin_subject = preg_replace('/\n/', ' ' , (isset($matches[1]) ? $matches[1] : null));
+    $bulletin_subject = (!empty($bulletin_subject) ? $bulletin_subject : null);
 
     preg_match('/^Type of Change: *(.+) */m', $first_page_text, $matches);
-    $bulletin_type_of_change = $matches[1];
+    $bulletin_type_of_change = (isset($matches[1]) ? $matches[1] : null);
 
     preg_match('/^Recommended[\n\r\s]+^Compliance: *(.+) */m', $first_page_text, $matches);
-    $bulletin_recommended_compliance = $matches[1];
+    $bulletin_recommended_compliance = (isset($matches[1]) ? $matches[1] : null);
 
     $pdf_contents[] = [
         'NUMBER' => $bulletin_number, 
@@ -78,3 +90,5 @@ $writer->insertOne(['NUMBER', 'ISSUED', 'REVISED', 'MODEL', 'SUBJECT', 'TYPE OF 
 $writer->insertAll($pdf_contents);
 
 file_put_contents($output_csv_path, $writer);
+
+echo "Extracted data from all PDFs in $service_bulletin_directory to $output_csv_path";
