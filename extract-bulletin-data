@@ -1,0 +1,53 @@
+#!/usr/bin/env php
+<?php
+
+// This takes a directory of PDF files, and extracts the relevant data, and outputs a CSV file
+
+
+require __DIR__ . '/vendor/autoload.php';
+
+error_reporting(-1);
+
+
+$service_bulletin_directory = realpath($argv[1]);
+
+$parser = new \Smalot\PdfParser\Parser();
+
+$pdf_contents = [];
+
+foreach (new \DirectoryIterator($service_bulletin_directory) as $service_bulletin_file) {
+    
+    if ($service_bulletin_file->isDot()) continue;
+    if ($service_bulletin_file->getType() != 'file') continue;
+    if ($service_bulletin_file->getExtension() != 'pdf') continue;
+
+    // var_dump("DOES THIS WORK?");
+
+    // var_dump($service_bulletin_file->getPathname());
+
+    $pdf = $parser->parseFile($service_bulletin_file->getPathname());
+
+    $first_page = $pdf->getPages()[0];
+
+    $details  = $pdf->getDetails();
+
+// foreach ($details as $property => $value) {
+//     if (is_array($value)) {
+//         $value = implode(', ', $value);
+//     }
+//     echo $property . ' => ' . $value . "\n";
+// }
+
+    // $text = $pdf->getText();
+    // echo $text;
+    var_dump($first_page->getText());
+    
+    // var_dump($pdf_text);
+
+
+    // $pdf_contents = 
+
+    // var_dump($service_bulletin_file);
+    // var_dump($service_bulletin_file->getSize());
+}
+

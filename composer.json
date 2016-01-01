@@ -1,0 +1,9 @@
+{
+    "name": "cmcdragonkai/woodside-service-bulletin-parser",
+    "require":{
+        "smalot/pdfparser": "0.9.25"
+    },
+    "config": {
+        "bin-dir": "bin/"
+    }
+}
