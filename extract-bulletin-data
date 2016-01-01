@@ -19,9 +19,14 @@ $pdf_contents = [];
 foreach (new \DirectoryIterator($service_bulletin_directory) as $service_bulletin_file) {
     
     if ($service_bulletin_file->isDot()) continue;
-    if ($service_bulletin_file->getType() != 'file') continue;
-    if ($service_bulletin_file->getExtension() != 'pdf') continue;
-    if ($mime_type_parser->file($service_bulletin_file->getPathname()) != 'application/pdf') continue;
+
+    if ($service_bulletin_file->getType() != 'file'
+        OR $service_bulletin_file->getExtension() != 'pdf'
+        OR $mime_type_parser->file($service_bulletin_file->getPathname()) != 'application/pdf') {
+        echo "Skipping '{$service_bulletin_file->getFilename()}', not a PDF file.";
+        echo "\n";
+        continue;
+    }
 
     $pdf = $parser->parseFile($service_bulletin_file->getPathname());
     $first_page = $pdf->getPages()[0];
