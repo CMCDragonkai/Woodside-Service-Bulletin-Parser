@@ -23,6 +23,15 @@ $output_csv_path = realpath($output_csv_path);
 $mime_type_parser = new \finfo(FILEINFO_MIME_TYPE);
 $parser = new \Smalot\PdfParser\Parser();
 
+function err ($message) {
+    error_log($message, 0, 'php://stderr');
+}
+
+function out ($message) {
+    echo $message;
+    echo "\n";
+}
+
 $pdf_contents = [];
 
 foreach (
@@ -42,17 +51,24 @@ foreach (
         OR !$service_bulletin_file->isReadable() 
         OR $service_bulletin_file->getExtension() != 'pdf' 
         OR $mime_type_parser->file($service_bulletin_file->getPathname()) != 'application/pdf') {
-        echo "Skipping '{$service_bulletin_file->getFilename()}', it is not a PDF file or it is not readable.";
-        echo "\n";
+        err("Skipping '{$service_bulletin_file->getFilename()}', it is not a PDF file or it is not readable.");
         continue;
     }
 
-    echo "Parsing '{$service_bulletin_file->getFilename()}'";
-    echo "\n";
+    try {
 
-    $pdf = $parser->parseFile($service_bulletin_file->getPathname());
-    $first_page = $pdf->getPages()[0];
-    $first_page_text = $first_page->getText();
+        $pdf = $parser->parseFile($service_bulletin_file->getPathname());
+        $first_page = $pdf->getPages()[0];
+        $first_page_text = $first_page->getText();
+
+    } catch (\Exception $e) {
+
+        err("Error parsing this file: '{$service_bulletin_file->getPathname()}'");
+        err("    Exception Message: {$e->getCode()} {$e->getMessage()}");
+
+    }
+
+    out("Parsing '{$service_bulletin_file->getPathname()}'");
 
     preg_match('/^NUMBER: *(.+) */m', $first_page_text, $matches);
     $bulletin_number = (isset($matches[1]) ? $matches[1] : null);
@@ -95,4 +111,4 @@ $writer->insertAll($pdf_contents);
 
 file_put_contents($output_csv_path, $writer);
 
-echo "Extracted data from all PDFs in $service_bulletin_directory to $output_csv_path";
+out("Extracted data from all PDFs in $service_bulletin_directory to $output_csv_path");
