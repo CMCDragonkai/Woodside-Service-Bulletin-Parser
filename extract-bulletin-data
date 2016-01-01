@@ -32,6 +32,35 @@ foreach (new \DirectoryIterator($service_bulletin_directory) as $service_bulleti
     $first_page = $pdf->getPages()[0];
     $first_page_text = $first_page->getText();
 
-    var_dump($first_page_text);
+    preg_match('/^NUMBER: *(.+) */m', $first_page_text, $matches);
+    $bulletin_number = $matches[1];
+
+    preg_match('/^ISSUED: *(.+) */m', $first_page_text, $matches);
+    $bulletin_issued_date = $matches[1];
+
+    preg_match('/^REVISED: *(.+) */m', $first_page_text, $matches);
+    $bulletin_revised_date = $matches[1];
+
+    preg_match('/^MODEL\(S\): *(.+) */m', $first_page_text, $matches);
+    $bulletin_model = $matches[1];
+
+    preg_match('/^SUBJECT: *([\S\s\n]+?)\n^(?:PRODUCT SAFETY|—REVISION NOTICE—|.+:)/m', $first_page_text, $matches);
+    $bulletin_subject = preg_replace('/\n/', ' ' , $matches[1]);
+
+    preg_match('/^Type of Change: *(.+) */m', $first_page_text, $matches);
+    $bulletin_type_of_change = $matches[1];
+
+    preg_match('/^Recommended[\n\r\s]+^Compliance: *(.+) */m', $first_page_text, $matches);
+    $bulletin_recommended_compliance = $matches[1];
+
+    $pdf_contents[] = [
+        'NUMBER' => $bulletin_number, 
+        'ISSUED' => $bulletin_issued_date, 
+        'REVISED' => $bulletin_revised_date,
+        'MODEL' => $bulletin_model, 
+        'SUBJECT' => $bulletin_subject,
+        'TYPE OF CHANGE' => $bulletin_type_of_change, 
+        'RECOMMENDED COMPLIANCE' => $bulletin_recommended_compliance
+    ];
 
 }
