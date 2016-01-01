@@ -2,7 +2,8 @@
     "name": "cmcdragonkai/woodside-service-bulletin-parser",
     "require":{
         "ext-fileinfo": "*",
-        "smalot/pdfparser": "0.9.25"
+        "smalot/pdfparser": "0.9.25",
+        "league/csv": "8.0.0"
     },
     "config": {
         "bin-dir": "bin/"

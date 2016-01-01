@@ -6,9 +6,15 @@
 require __DIR__ . '/vendor/autoload.php';
 
 $service_bulletin_directory = $argv[1];
+$output_csv_path = $argv[2];
 
 if (!is_dir($service_bulletin_directory) OR !is_readable($service_bulletin_directory)) {
     echo "The path parameter is not a directory, or you do not have read permissions on the directory.";
+}
+
+$output_csv_directory = dirname($output_csv_path);
+if (!is_dir($output_csv_directory) OR !is_writable($output_csv_directory)) {
+    echo "The directory for the output CSV path is not a directory or is not writable.";
 }
 
 $service_bulletin_directory = realpath($argv[1]);
@@ -64,3 +70,10 @@ foreach (new \DirectoryIterator($service_bulletin_directory) as $service_bulleti
     ];
 
 }
+
+$writer = \League\Csv\Writer::createFromFileObject(new \SplTempFileObject());
+
+$writer->insertOne(['NUMBER', 'ISSUED', 'REVISED', 'MODEL', 'SUBJECT', 'TYPE OF CHANGE', 'RECOMMENDED COMPLIANCE']);
+$writer->insertAll($pdf_contents);
+
+$writer->output($output_csv_path);
