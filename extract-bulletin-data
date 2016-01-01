@@ -5,8 +5,8 @@
 
 require __DIR__ . '/vendor/autoload.php';
 
-$service_bulletin_directory = $argv[1];
-$output_csv_path = $argv[2];
+$service_bulletin_directory = (isset($argv[1]) ? $argv[1] : null);
+$output_csv_path = (isset($argv[2]) ? $argv[2] : null);
 
 if (!is_dir($service_bulletin_directory) OR !is_readable($service_bulletin_directory)) {
     echo "The path parameter is not a directory, or you do not have read permissions on the directory.";
@@ -17,7 +17,8 @@ if (!is_dir($output_csv_directory) OR !is_writable($output_csv_directory)) {
     echo "The directory for the output CSV path is not a directory or is not writable.";
 }
 
-$service_bulletin_directory = realpath($argv[1]);
+$service_bulletin_directory = realpath($service_bulletin_directory);
+$output_csv_path = realpath($output_csv_path);
 $mime_type_parser = new \finfo(FILEINFO_MIME_TYPE);
 $parser = new \Smalot\PdfParser\Parser();
 
@@ -76,4 +77,4 @@ $writer = \League\Csv\Writer::createFromFileObject(new \SplTempFileObject());
 $writer->insertOne(['NUMBER', 'ISSUED', 'REVISED', 'MODEL', 'SUBJECT', 'TYPE OF CHANGE', 'RECOMMENDED COMPLIANCE']);
 $writer->insertAll($pdf_contents);
 
-$writer->output($output_csv_path);
+file_put_contents($output_csv_path, $writer);
