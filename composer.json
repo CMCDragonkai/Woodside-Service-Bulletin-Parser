@@ -1,5 +1,6 @@
 {
     "name": "cmcdragonkai/woodside-service-bulletin-parser",
+    "bin": ["extract-bulletin-data", "extract-compliance-data"],
     "require":{
         "ext-fileinfo": "*",
         "smalot/pdfparser": "0.9.25",
