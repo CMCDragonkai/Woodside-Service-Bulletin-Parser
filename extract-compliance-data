@@ -1,0 +1,79 @@
+#!/usr/bin/env php
+<?php
+
+// extract-compliance-data './path/to/compliance-report.pdf' './path/to/output.csv'
+
+require __DIR__ . '/vendor/autoload.php';
+
+$compliance_report_path = (isset($argv[1]) ? $argv[1] : null);
+$output_csv_path = (isset($argv[2]) ? $argv[2] : null);
+
+function err ($message) {
+    error_log($message, 0, 'php://stderr');
+}
+
+function out ($message) {
+    echo $message;
+    echo "\n";
+}
+
+if (!is_readable($compliance_report_path)) {
+    err("The compliance report path parameter is not readable.");
+    exit(1);
+}
+
+$output_csv_directory = dirname($output_csv_path);
+if (!is_dir($output_csv_directory) OR !is_writable($output_csv_directory)) {
+    err("The directory for the output CSV path parameter is not a directory or is not writable.");
+    exit(1);
+}
+
+$compliance_report_path = realpath($compliance_report_path);
+
+if ((new \finfo(FILEINFO_MIME_TYPE))->file($compliance_report_path) != 'application/pdf') {
+    err('The compliance report file is not a PDF file.');
+    exit(1);
+}
+
+try {
+
+    $parser = new \Smalot\PdfParser\Parser();
+    $pdf = $parser->parseFile($compliance_report_path);
+
+    foreach($pdf->getPages() as $page) {
+
+        $page_text = $page->getText();
+
+        var_dump($page_text);
+        var_dump($page->getDetails());
+        var_dump($page->getHeader());
+
+        // // 1 package serial number per page
+        // $package_serial_number = (preg_match('/Package S\/N: *([^\s]+)/', $page_text, $matches)) 
+        //     ? $matches[1] : null);
+
+        // // 1 package name per page
+        // $package_serial_number = (preg_match('/^Package Name: *([^\s]+)/m', $page_text, $matches)) 
+        //     ? $matches[1] : null);
+
+        // // n service bulletin statuses
+        // // this determines how many tables there are in a single page
+        // // $matches[1] will contain all the matches or an empty array
+        // preg_match_all('/^service bulletins (in work|completed) as of/mi', $page_text, $matches);
+        // $service_bulletin_statuses = $matches[1];
+
+        // if (count($service_bulletin_statuses) < 1) {
+        //     err("No service bulletins extracted from '$compliance_report_path' at page X");
+        //     continue;
+        // }
+
+
+    }
+    
+} catch (\Exception $e) {
+
+    err("Error parsing this file: '$compliance_report_path'");
+    err("    Exception Message: {$e->getCode()} {$e->getMessage()}");
+    exit(1);
+
+}
