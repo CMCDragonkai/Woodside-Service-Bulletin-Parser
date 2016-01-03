@@ -111,7 +111,7 @@ foreach (
     preg_match('/^Recommended[\n\r\s]+^Compliance: *(.+) */m', $first_page_text, $matches);
     $bulletin_recommended_compliance = (isset($matches[1]) ? $matches[1] : null);
 
-    $pdf_contents[] = [
+    $contents = [
         'FILE'                   => $service_bulletin_file->getPathname(),
         'NUMBER'                 => $bulletin_number, 
         'ISSUED'                 => $bulletin_issued_date, 
@@ -122,6 +122,14 @@ foreach (
         'TYPE OF CHANGE'         => $bulletin_type_of_change, 
         'RECOMMENDED COMPLIANCE' => $bulletin_recommended_compliance
     ];
+
+    // if all extracted elements are empty, then this file is effectively unparseable
+    if (!array_filter(array_slice($contents, 1))) {
+        err("Extracted nothing from file: '{$service_bulletin_file->getPathname()}'");
+        continue;
+    }
+
+    $pdf_contents[] = $contents;
 
 }
 
