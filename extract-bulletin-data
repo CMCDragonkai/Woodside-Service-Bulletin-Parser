@@ -20,11 +20,13 @@ function out ($message) {
 
 if (!is_dir($service_bulletin_directory) OR !is_readable($service_bulletin_directory)) {
     err("The path parameter is not a directory, or you do not have read permissions on the directory.");
+    exit(1);
 }
 
 $output_csv_directory = dirname($output_csv_path);
 if (!is_dir($output_csv_directory) OR !is_writable($output_csv_directory)) {
     err("The directory for the output CSV path parameter is not a directory or is not writable.");
+    exit(1);
 }
 
 $service_bulletin_directory = realpath($service_bulletin_directory);
@@ -96,13 +98,14 @@ foreach (
     $bulletin_recommended_compliance = (isset($matches[1]) ? $matches[1] : null);
 
     $pdf_contents[] = [
-        'NUMBER' => $bulletin_number, 
-        'ISSUED' => $bulletin_issued_date, 
-        'REVISED' => $bulletin_revised_date,
-        'PRODUCT' => $bulletin_product,
-        'MODEL' => $bulletin_model, 
-        'SUBJECT' => $bulletin_subject,
-        'TYPE OF CHANGE' => $bulletin_type_of_change, 
+        'FILE'                   => $service_bulletin_file->getPathname(),
+        'NUMBER'                 => $bulletin_number, 
+        'ISSUED'                 => $bulletin_issued_date, 
+        'REVISED'                => $bulletin_revised_date,
+        'PRODUCT'                => $bulletin_product,
+        'MODEL'                  => $bulletin_model, 
+        'SUBJECT'                => $bulletin_subject,
+        'TYPE OF CHANGE'         => $bulletin_type_of_change, 
         'RECOMMENDED COMPLIANCE' => $bulletin_recommended_compliance
     ];
 
@@ -110,7 +113,7 @@ foreach (
 
 $writer = \League\Csv\Writer::createFromFileObject(new \SplTempFileObject());
 
-$writer->insertOne(['NUMBER', 'ISSUED', 'REVISED', 'PRODUCT', 'MODEL', 'SUBJECT', 'TYPE OF CHANGE', 'RECOMMENDED COMPLIANCE']);
+$writer->insertOne(['FILE', 'NUMBER', 'ISSUED', 'REVISED', 'PRODUCT', 'MODEL', 'SUBJECT', 'TYPE OF CHANGE', 'RECOMMENDED COMPLIANCE']);
 $writer->insertAll($pdf_contents);
 
 file_put_contents($output_csv_path, $writer);
