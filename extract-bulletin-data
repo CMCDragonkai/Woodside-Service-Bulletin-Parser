@@ -19,7 +19,7 @@ function out ($message) {
 }
 
 function sanitiseToFilename ($string, $replacement = '') {
-    return preg_replace("/[^a-zA-Z0-9 .,'\-_@!%&#$^&+=()\[\]\{\}]/", $replacement, $string);
+    return preg_replace("/[^\p{L}0-9 .,;'~`!@#$%^&()\-_+=\[\]\{\}]/u", $replacement, $string);
 }
 
 if (!is_dir($service_bulletin_directory) OR !is_readable($service_bulletin_directory)) {
