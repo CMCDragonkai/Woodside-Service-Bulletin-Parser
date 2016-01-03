@@ -18,6 +18,10 @@ function out ($message) {
     echo "\n";
 }
 
+function sanitiseToFilename ($string, $replacement = '') {
+    return preg_replace("/[^a-zA-Z0-9 .,'\-_@!%&#$^&+=()\[\]\{\}]/", $replacement, $string);
+}
+
 if (!is_dir($service_bulletin_directory) OR !is_readable($service_bulletin_directory)) {
     err("The path parameter is not a directory, or you do not have read permissions on the directory.");
     exit(1);
@@ -89,6 +93,7 @@ foreach (
 
     preg_match('/^SUBJECT: *([\S\s\n]+?)\n^(?:PRODUCT SAFETY|—REVISION NOTICE—|.+:)/m', $first_page_text, $matches);
     $bulletin_subject = preg_replace('/\n/', ' ' , (isset($matches[1]) ? $matches[1] : null));
+    $bulletin_subject = sanitiseToFilename($bulletin_subject);
     $bulletin_subject = (!empty($bulletin_subject) ? $bulletin_subject : null);
 
     preg_match('/^Type of Change: *(.+) */m', $first_page_text, $matches);
