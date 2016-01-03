@@ -70,6 +70,7 @@ foreach (
 
         err("Error parsing this file: '{$service_bulletin_file->getPathname()}'");
         err("    Exception Message: {$e->getCode()} {$e->getMessage()}");
+        continue;
 
     }
 
