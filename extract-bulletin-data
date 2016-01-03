@@ -75,7 +75,16 @@ foreach (
 
     out("Parsing '{$service_bulletin_file->getPathname()}'");
 
-    preg_match('/^NUMBER: *(.+) */m', $first_page_text, $matches);
+    // We use a non-capturing group with a negative lookahead to prevent numbers.
+    // Possible types of data:
+    /*
+        NUMBER: 1.0/100
+        NUMBER: 1.0/100   
+        NUMBER: 1.0/100C
+        NUMBER: 1.0/135 B    Page 1 of 6
+        NUMBER: 5.13.6/101 Caterpillar
+     */
+    preg_match('/^NUMBER: *(.+\/\d+(?: *[A-Za-z](?![A-Za-z0-9]))?)/m', $first_page_text, $matches);
     $bulletin_number = (isset($matches[1]) ? $matches[1] : null);
 
     preg_match('/^ISSUED: *(.+) */m', $first_page_text, $matches);
