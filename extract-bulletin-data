@@ -79,6 +79,9 @@ foreach (
     preg_match('/^REVISED: *(.+) */m', $first_page_text, $matches);
     $bulletin_revised_date = (isset($matches[1]) ? $matches[1] : null);
 
+    preg_match('/^PRODUCT: *(.+) */m', $first_page_text, $matches);
+    $bulletin_product = (isset($matches[1]) ? $matches[1] : null);
+
     preg_match('/^MODEL\(S\): *(.+) */m', $first_page_text, $matches);
     $bulletin_model = (isset($matches[1]) ? $matches[1] : null);
 
@@ -96,6 +99,7 @@ foreach (
         'NUMBER' => $bulletin_number, 
         'ISSUED' => $bulletin_issued_date, 
         'REVISED' => $bulletin_revised_date,
+        'PRODUCT' => $bulletin_product,
         'MODEL' => $bulletin_model, 
         'SUBJECT' => $bulletin_subject,
         'TYPE OF CHANGE' => $bulletin_type_of_change, 
@@ -106,7 +110,7 @@ foreach (
 
 $writer = \League\Csv\Writer::createFromFileObject(new \SplTempFileObject());
 
-$writer->insertOne(['NUMBER', 'ISSUED', 'REVISED', 'MODEL', 'SUBJECT', 'TYPE OF CHANGE', 'RECOMMENDED COMPLIANCE']);
+$writer->insertOne(['NUMBER', 'ISSUED', 'REVISED', 'PRODUCT', 'MODEL', 'SUBJECT', 'TYPE OF CHANGE', 'RECOMMENDED COMPLIANCE']);
 $writer->insertAll($pdf_contents);
 
 file_put_contents($output_csv_path, $writer);
