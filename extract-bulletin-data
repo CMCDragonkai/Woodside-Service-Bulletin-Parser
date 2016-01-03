@@ -126,7 +126,7 @@ foreach (
 
 $writer = \League\Csv\Writer::createFromFileObject(new \SplTempFileObject());
 
-$writer->insertOne(['FILE', 'NUMBER', 'ISSUED', 'REVISED', 'PRODUCT', 'MODEL', 'SUBJECT', 'TYPE OF CHANGE', 'RECOMMENDED COMPLIANCE']);
+$writer->insertOne(array_keys($pdf_contents[0]));
 $writer->insertAll($pdf_contents);
 
 file_put_contents($output_csv_path, $writer);
