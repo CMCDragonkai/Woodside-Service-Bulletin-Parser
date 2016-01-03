@@ -34,7 +34,6 @@ if (!is_dir($output_csv_directory) OR !is_writable($output_csv_directory)) {
 }
 
 $service_bulletin_directory = realpath($service_bulletin_directory);
-$output_csv_path = realpath($output_csv_path);
 $mime_type_parser = new \finfo(FILEINFO_MIME_TYPE);
 $parser = new \Smalot\PdfParser\Parser();
 
