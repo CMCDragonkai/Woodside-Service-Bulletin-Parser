@@ -47,11 +47,11 @@ try {
 
         // 1 package serial number per page
         $package_serial_number = (preg_match('/Package S\/N: *([^\s]+)/', $page_text, $matches)) 
-            ? $matches[1] : null);
+            ? $matches[1] : null;
 
         // 1 package name per page
         $package_name = (preg_match('/^Package Name: *([^\s]+)/m', $page_text, $matches)) 
-            ? $matches[1] : null);
+            ? $matches[1] : null;
 
         // there can be more than 1 service bulletin tables in a page, but there must be at least 1
         // or else we are skipping the page
@@ -119,11 +119,11 @@ try {
 
                 $row_text = $row_texts[$j];
 
-                preg_match('/(OH[A-Z]\d\d-[A-Z]\d\d\d\d)/', $row_text, $matches);
-                $bulletin_engine_serial_number = (isset($matches[1]) ? $matches[1] : null);
+                $bulletin_engine_serial_number = (preg_match('/(OH[A-Z]\d\d-[A-Z]\d\d\d\d)/', $row_text, $matches)) 
+                    ? $matches[1] : null;
 
-                preg_match('/(\d\d\/\d\d\/\d\d: [\S\s]+?)^(?:Service|Caterpillar:)/m', $row_text, $matches);
-                $bulletin_comment = (isset($matches[1]) ? $matches[1] : null);
+                $bulletin_comment = (preg_match('/(\d\d\/\d\d\/\d\d: [\S\s]+?)^(?:Service|Caterpillar:)/m', $row_text, $matches)) 
+                    ? $matches[1] : null;
 
                 $rows[] = [
                     'PACKAGE SERIAL NUMBER'         => $package_serial_number,
@@ -131,7 +131,7 @@ try {
                     'BULLETIN STATUS'               => $service_bulletin_statuses[$i],
                     'BULLETIN DATE'                 => $service_bulletin_status_dates[$i],
                     'BULLETIN NUMBER'               => $bulletin_numbers[$j],
-                    'BULLETIN ENGINE SERIAL NUMBER' => $bulletin_engine_serial_number
+                    'BULLETIN ENGINE SERIAL NUMBER' => $bulletin_engine_serial_number,
                     'BULLETIN COMMENTS'             => $bulletin_comment,
                 ];
 
