@@ -40,6 +40,8 @@ try {
     $parser = new \Smalot\PdfParser\Parser();
     $pdf = $parser->parseFile($compliance_report_path);
 
+    $rows = [];
+
     foreach($pdf->getPages() as $page_number => $page) {
 
         $page_number++;
@@ -59,6 +61,9 @@ try {
         $service_bulletin_statuses = $matches[1];
         $service_bulletin_status_dates = $matches[2];
 
+        var_dump($table_count);
+        var_dump($page_text);
+        
         if ($table_count < 1) {
             
             err("Skipping page $page_number for '$compliance_report_path' because there are no service bulletins.");
@@ -91,8 +96,6 @@ try {
 
         // every table has multiple rows
         var_dump($table_texts);
-
-        $rows = [];
 
         // for every table, we need to extract the rows
         for ($i = 0; $i < $table_count; $i++) {
