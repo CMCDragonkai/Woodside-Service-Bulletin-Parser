@@ -57,7 +57,7 @@ try {
 
         // there can be more than 1 service bulletin tables in a page, but there must be at least 1
         // or else we are skipping the page
-        $table_count = preg_match_all('/^service bulletins (in work|completed) as of (\w{3} \w, \w{4})/mi', $page_text, $matches);
+        $table_count = preg_match_all('/^service *bulletins *(in *work|completed) *as *of *(\w{3} \w, \w{4})/mi', $page_text, $matches);
         $service_bulletin_statuses = $matches[1];
         $service_bulletin_status_dates = $matches[2];
 
@@ -80,7 +80,7 @@ try {
             // this way we can slice it off safely
             // every match of the regular expression results in 1 extra element in the result (even if empty)
             $table_texts = array_slice(
-                preg_split('/^service bulletins in (?:work|completed) as of \w{3} \w, \w{4}/mi', $page_text), 
+                preg_split('/^service *bulletins *(in *work|completed) *as *of *(\w{3} \w, \w{4})/mi', $page_text), 
                 1
             );
 
