@@ -82,7 +82,7 @@ foreach (
 
             if ($table_count < 1) {
                 
-                err("Skipping page $page_number for '$compliance_report_path' because there are no service bulletins detected, this could be due to an unparseable page text.");
+                err("Skipping page $page_number for '{$compliance_report_file->getPathname()}' because there are no service bulletins detected, this could be due to an unparseable page text.");
                 continue;
 
             } elseif ($table_count == 1) {
@@ -115,7 +115,7 @@ foreach (
                 $bulletin_numbers = $matches[1];
 
                 if ($row_count < 1) {
-                    err("Skipping table $i at page $page_number for '$compliance_report_path' because there are no rows detected, this could be due to an unparseable table text.");
+                    err("Skipping table $i at page $page_number for '{$compliance_report_file->getPathname()}' because there are no rows detected, this could be due to an unparseable table text.");
                     continue;
                 } elseif ($row_count == 1) {
                     $row_texts = [$table_text];
