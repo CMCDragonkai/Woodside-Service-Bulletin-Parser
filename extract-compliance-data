@@ -90,7 +90,7 @@ try {
             $table_text = $table_texts[$i];
 
             // rows appear to be marked by Service Bulletin field
-            $row_marker_regex = '/^Service[\s]*Bulletin[\s]*(\d+\.\d+\/\d+(?: *[A-Za-z](?![A-Za-z0-9]))?)/m';
+            $row_marker_regex = '/^Service\s*Bulletin\s*([\d\.]+\/\d+(?: *[A-Za-z](?![A-Za-z0-9]))?)/m';
 
             // this tells us how many rows
             $row_count = preg_match_all($row_marker_regex, $table_text, $matches);
@@ -121,7 +121,7 @@ try {
                 // \Z is the end of string in a multiline mode `m`
                 // Using [\S\s]+? lazy match with non-capturing group containing as the last alternate end of string `\Z` 
                 // is what allows one to "match until optional string or until end of string".
-                $bulletin_comment = (preg_match('/(\d\d\/\d\d\/\d\d: [\S\s]+?)(?:^Service *Bulletin|^Caterpillar: *Confidential *Green|\Z)/m', $row_text, $matches)) 
+                $bulletin_comment = (preg_match('/(\d\d\/\d\d\/\d\d: [\S\s]+?)(?:^Service\s*Bulletin|^Caterpillar: *Confidential *Green|\Z)/m', $row_text, $matches)) 
                     ? $matches[1] : null;
                 $bulletin_comment = (!is_null($bulletin_comment)) ? preg_replace('/\n/', ' ' , $bulletin_comment) : null;
                 $bulletin_comment = (!is_null($bulletin_comment)) ? trim($bulletin_comment) : null;
