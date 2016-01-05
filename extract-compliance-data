@@ -121,12 +121,12 @@ try {
                 // \Z is the end of string in a multiline mode `m`
                 // Using [\S\s]+? lazy match with non-capturing group containing as the last alternate end of string `\Z` 
                 // is what allows one to "match until optional string or until end of string".
-                $bulletin_comment = (preg_match('/(\d\d\/\d\d\/\d\d: [\S\s]+?)(?:^Caterpillar: *Confidential *Green|\Z)/m', $row_text, $matches)) 
+                $bulletin_comment = (preg_match('/(\d\d\/\d\d\/\d\d: [\S\s]+?)(?:^Service *Bulletin|^Caterpillar: *Confidential *Green|\Z)/m', $row_text, $matches)) 
                     ? $matches[1] : null;
                 $bulletin_comment = (!is_null($bulletin_comment)) ? preg_replace('/\n/', ' ' , $bulletin_comment) : null;
                 $bulletin_comment = (!is_null($bulletin_comment)) ? trim($bulletin_comment) : null;
 
-                $rows[] = [
+                $new_row = [
                     'PACKAGE SERIAL NUMBER'         => $package_serial_number,
                     'PACKAGE NAME'                  => $package_name,
                     'BULLETIN STATUS'               => $service_bulletin_statuses[$i],
@@ -135,6 +135,11 @@ try {
                     'BULLETIN ENGINE SERIAL NUMBER' => $bulletin_engine_serial_number,
                     'BULLETIN COMMENTS'             => $bulletin_comment,
                 ];
+
+                var_dump($row_text);
+                var_dump($new_row);
+
+                $rows[] = $new_row;
 
             }
 
@@ -149,5 +154,3 @@ try {
     exit(1);
 
 }
-
-var_dump($rows);
