@@ -47,8 +47,6 @@ try {
         $page_number++;
         $page_text = $page->getText();
 
-        var_dump($page_text);
-
         // 1 package serial number per page
         $package_serial_number = (preg_match('/Package S\/N: *([^\s]+)/', $page_text, $matches)) 
             ? $matches[1] : null;
@@ -57,20 +55,12 @@ try {
         $package_name = (preg_match('/^Package Name: *([^\s]+)/m', $page_text, $matches)) 
             ? $matches[1] : null;
 
-        var_dump($package_serial_number);
-        var_dump($package_name);
+        // there can be more than 1 service bulletin tables in a page, but there must be at least 1 or else we are skipping the page
+        $table_marker_regex = '/^service *bulletins *(in *work|completed) *as *of *(\w{3} \w, \w{4})/mi';
 
-        // there can be more than 1 service bulletin tables in a page, but there must be at least 1
-        // or else we are skipping the page
-        $table_count = preg_match_all('/^service *bulletins *(in *work|completed) *as *of *(\w{3} \w, \w{4})/mi', $page_text, $matches);
+        $table_count = preg_match_all($table_marker_regex, $page_text, $matches);
         $service_bulletin_statuses = $matches[1];
         $service_bulletin_status_dates = $matches[2];
-
-        var_dump($table_count);
-
-        var_dump($service_bulletin_statuses);
-        var_dump($service_bulletin_status_dates);
-        var_dump($table_texts);
 
         if ($table_count < 1) {
             
@@ -88,23 +78,23 @@ try {
             // this way we can slice it off safely
             // every match of the regular expression results in 1 extra element in the result (even if empty)
             $table_texts = array_slice(
-                preg_split('/^service *bulletins *(in *work|completed) *as *of *(\w{3} \w, \w{4})/mi', $page_text), 
+                preg_split($table_marker_regex, $page_text), 
                 1
             );
 
         }
 
-        // for every table, we need to extract the rows
+        // for every table, we need to extract possibly multiple rows
         for ($i = 0; $i < $table_count; $i++) {
 
             $table_text = $table_texts[$i];
 
-            // this tells us how many rows
-            $row_count = preg_match_all('/^Service[\s]*Bulletin[\s]*(\d+\.\d+\/\d+(?: *[A-Za-z](?![A-Za-z0-9]))?)/m', $table_text, $matches);
-            $bulletin_numbers = $matches[1];
+            // rows appear to be marked by Service Bulletin field
+            $row_marker_regex = '/^Service[\s]*Bulletin[\s]*(\d+\.\d+\/\d+(?: *[A-Za-z](?![A-Za-z0-9]))?)/m';
 
-            var_dump($row_count);
-            var_dump($bulletin_numbers);
+            // this tells us how many rows
+            $row_count = preg_match_all($row_marker_regex, $table_text, $matches);
+            $bulletin_numbers = $matches[1];
 
             if ($row_count < 1) {
                 err("Skipping table $i at page $page_number for '$compliance_report_path' because there are no rows.");
@@ -113,23 +103,28 @@ try {
                 $row_texts = [$table_text];
             } else {
                 $row_texts = array_slice(
-                    preg_split('/^Service[\s]*Bulletin[\s]*(\d+\.\d+\/\d+(?: *[A-Za-z](?![A-Za-z0-9]))?)/', $table_text), 
+                    preg_split($row_marker_regex, $table_text), 
                     1
                 );
             }
-
-            var_dump($row_texts);
-            exit;
 
             for ($j = 0; $j < $row_count; $j++) {
 
                 $row_text = $row_texts[$j];
 
+                // 1 engine serial number per row
                 $bulletin_engine_serial_number = (preg_match('/(OH[A-Z]\d\d-[A-Z]\d\d\d\d)/', $row_text, $matches)) 
                     ? $matches[1] : null;
 
-                $bulletin_comment = (preg_match('/(\d\d\/\d\d\/\d\d: [\S\s]+?)^(?:Service|Caterpillar:)/m', $row_text, $matches)) 
+                // 1 bulletin comment per row
+                // [\S\s] means `.` but including newlines
+                // \Z is the end of string in a multiline mode `m`
+                // Using [\S\s]+? lazy match with non-capturing group containing as the last alternate end of string `\Z` 
+                // is what allows one to "match until optional string or until end of string".
+                $bulletin_comment = (preg_match('/(\d\d\/\d\d\/\d\d: [\S\s]+?)(?:^Caterpillar: *Confidential *Green|\Z)/m', $row_text, $matches)) 
                     ? $matches[1] : null;
+                $bulletin_comment = (!is_null($bulletin_comment)) ? preg_replace('/\n/', ' ' , $bulletin_comment) : null;
+                $bulletin_comment = (!is_null($bulletin_comment)) ? trim($bulletin_comment) : null;
 
                 $rows[] = [
                     'PACKAGE SERIAL NUMBER'         => $package_serial_number,
