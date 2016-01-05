@@ -1,11 +1,11 @@
 #!/usr/bin/env php
 <?php
 
-// extract-compliance-data './path/to/compliance-report.pdf' './path/to/output.csv'
+// extract-compliance-data './directory/to/compliance/reports' './path/to/output.csv'
 
 require __DIR__ . '/vendor/autoload.php';
 
-$compliance_report_path = (isset($argv[1]) ? $argv[1] : null);
+$compliance_report_directory = (isset($argv[1]) ? $argv[1] : null);
 $output_csv_path = (isset($argv[2]) ? $argv[2] : null);
 
 function err ($message) {
@@ -17,8 +17,8 @@ function out ($message) {
     echo "\n";
 }
 
-if (!is_readable($compliance_report_path)) {
-    err("The compliance report path parameter is not readable.");
+if (!is_dir($compliance_report_directory) OR !is_readable($compliance_report_directory)) {
+    err("The compliance report directory path parameter is not a directory, or you do not have read permissions on the directory.");
     exit(1);
 }
 
@@ -28,129 +28,168 @@ if (!is_dir($output_csv_directory) OR !is_writable($output_csv_directory)) {
     exit(1);
 }
 
-$compliance_report_path = realpath($compliance_report_path);
+$compliance_report_directory = realpath($compliance_report_directory);
+$mime_type_parser = new \finfo(FILEINFO_MIME_TYPE);
+$pdf_parser = new \Smalot\PdfParser\Parser();
 
-if ((new \finfo(FILEINFO_MIME_TYPE))->file($compliance_report_path) != 'application/pdf') {
-    err('The compliance report file is not a PDF file.');
-    exit(1);
-}
+$compliance_rows = [];
 
-try {
+foreach (
+    new \RecursiveIteratorIterator (
+        new \RecursiveDirectoryIterator (
+            $compliance_report_directory, 
+            \RecursiveDirectoryIterator::SKIP_DOTS
+        )
+    ) 
+    as $compliance_report_file) {
 
-    $parser = new \Smalot\PdfParser\Parser();
-    $pdf = $parser->parseFile($compliance_report_path);
+    // skipping hidden files
+    if ($compliance_report_file->getFilename()[0] == '.') continue;
 
-    $rows = [];
+    // check if readable, is a file, has pdf extension, and correct mimetype
+    if (!$compliance_report_file->isFile() 
+        OR !$compliance_report_file->isReadable() 
+        OR $compliance_report_file->getExtension() != 'pdf' 
+        OR $mime_type_parser->file($compliance_report_file->getPathname()) != 'application/pdf') {
+        err("Skipping '{$compliance_report_file->getFilename()}', it is not a PDF file or it is not readable.");
+        continue;
+    }
 
-    foreach($pdf->getPages() as $page_number => $page) {
+    try {
 
-        $page_number++;
-        $page_text = $page->getText();
+        $pdf = $pdf_parser->parseFile($compliance_report_file->getPathname());
 
-        // 1 package serial number per page
-        $package_serial_number = (preg_match('/Package S\/N: *([^\s]+)/', $page_text, $matches)) 
-            ? $matches[1] : null;
+        foreach($pdf->getPages() as $page_number => $page) {
 
-        // 1 package name per page
-        $package_name = (preg_match('/^Package Name: *([^\s]+)/m', $page_text, $matches)) 
-            ? $matches[1] : null;
+            $page_number++;
+            $page_text = $page->getText();
 
-        // there can be more than 1 service bulletin tables in a page, but there must be at least 1 or else we are skipping the page
-        $table_marker_regex = '/^service *bulletins *(in *work|completed) *as *of *(\w{3} \w, \w{4})/mi';
+            // 1 package serial number per page
+            $package_serial_number = (preg_match('/Package S\/N: *([^\s]+)/', $page_text, $matches)) 
+                ? $matches[1] : null;
 
-        $table_count = preg_match_all($table_marker_regex, $page_text, $matches);
-        $service_bulletin_statuses = $matches[1];
-        $service_bulletin_status_dates = $matches[2];
+            // 1 package name per page
+            $package_name = (preg_match('/^Package Name: *([^\s]+)/m', $page_text, $matches)) 
+                ? $matches[1] : null;
 
-        if ($table_count < 1) {
-            
-            err("Skipping page $page_number for '$compliance_report_path' because there are no service bulletins.");
-            continue;
+            // there can be more than 1 service bulletin tables in a page, but there must be at least 1 or else we are skipping the page
+            $table_marker_regex = '/^service *bulletins *(in *work|completed) *as *of *(\w{3} \w, \w{4})/mi';
 
-        } elseif ($table_count == 1) {
+            $table_count = preg_match_all($table_marker_regex, $page_text, $matches);
+            $service_bulletin_statuses = $matches[1];
+            $service_bulletin_status_dates = $matches[2];
 
-            $table_texts = [$page_text];
-
-        } else {
-
-            // preg_split will always return 1 element (even if empty) prior to the match, this can happen if the 
-            // match is at the very beginning of the haystack string
-            // this way we can slice it off safely
-            // every match of the regular expression results in 1 extra element in the result (even if empty)
-            $table_texts = array_slice(
-                preg_split($table_marker_regex, $page_text), 
-                1
-            );
-
-        }
-
-        // for every table, we need to extract possibly multiple rows
-        for ($i = 0; $i < $table_count; $i++) {
-
-            $table_text = $table_texts[$i];
-
-            // rows appear to be marked by Service Bulletin field
-            $row_marker_regex = '/^Service\s*Bulletin\s*([\d\.]+\/\d+(?: *[A-Za-z](?![A-Za-z0-9]))?)/m';
-
-            // this tells us how many rows
-            $row_count = preg_match_all($row_marker_regex, $table_text, $matches);
-            $bulletin_numbers = $matches[1];
-
-            if ($row_count < 1) {
-                err("Skipping table $i at page $page_number for '$compliance_report_path' because there are no rows.");
+            if ($table_count < 1) {
+                
+                err("Skipping page $page_number for '$compliance_report_path' because there are no service bulletins detected, this could be due to an unparseable page text.");
                 continue;
-            } elseif ($row_count == 1) {
-                $row_texts = [$table_text];
+
+            } elseif ($table_count == 1) {
+
+                $table_texts = [$page_text];
+
             } else {
-                $row_texts = array_slice(
-                    preg_split($row_marker_regex, $table_text), 
+
+                // preg_split will always return 1 element (even if empty) prior to the match, this can happen if the 
+                // match is at the very beginning of the haystack string
+                // this way we can slice it off safely
+                // every match of the regular expression results in 1 extra element in the result (even if empty)
+                $table_texts = array_slice(
+                    preg_split($table_marker_regex, $page_text), 
                     1
                 );
+
             }
 
-            for ($j = 0; $j < $row_count; $j++) {
+            // for every table, we need to extract possibly multiple rows
+            for ($i = 0; $i < $table_count; $i++) {
 
-                $row_text = $row_texts[$j];
+                $table_text = $table_texts[$i];
 
-                // 1 engine serial number per row
-                $bulletin_engine_serial_number = (preg_match('/(OH[A-Z]\d\d-[A-Z]\d\d\d\d)/', $row_text, $matches)) 
-                    ? $matches[1] : null;
+                // rows appear to be marked by Service Bulletin field
+                $row_marker_regex = '/^Service\s*Bulletin\s*([\d\.]+\/\d+(?: *[A-Za-z](?![A-Za-z0-9]))?)/m';
 
-                // 1 bulletin comment per row
-                // [\S\s] means `.` but including newlines
-                // \Z is the end of string in a multiline mode `m`
-                // Using [\S\s]+? lazy match with non-capturing group containing as the last alternate end of string `\Z` 
-                // is what allows one to "match until optional string or until end of string".
-                $bulletin_comment = (preg_match('/(\d\d\/\d\d\/\d\d: [\S\s]+?)(?:^Service\s*Bulletin|^Caterpillar: *Confidential *Green|\Z)/m', $row_text, $matches)) 
-                    ? $matches[1] : null;
-                $bulletin_comment = (!is_null($bulletin_comment)) ? preg_replace('/\n/', ' ' , $bulletin_comment) : null;
-                $bulletin_comment = (!is_null($bulletin_comment)) ? trim($bulletin_comment) : null;
+                // this tells us how many rows
+                $row_count = preg_match_all($row_marker_regex, $table_text, $matches);
+                $bulletin_numbers = $matches[1];
 
-                $new_row = [
-                    'PACKAGE SERIAL NUMBER'         => $package_serial_number,
-                    'PACKAGE NAME'                  => $package_name,
-                    'BULLETIN STATUS'               => $service_bulletin_statuses[$i],
-                    'BULLETIN DATE'                 => $service_bulletin_status_dates[$i],
-                    'BULLETIN NUMBER'               => $bulletin_numbers[$j],
-                    'BULLETIN ENGINE SERIAL NUMBER' => $bulletin_engine_serial_number,
-                    'BULLETIN COMMENTS'             => $bulletin_comment,
-                ];
+                if ($row_count < 1) {
+                    err("Skipping table $i at page $page_number for '$compliance_report_path' because there are no rows detected, this could be due to an unparseable table text.");
+                    continue;
+                } elseif ($row_count == 1) {
+                    $row_texts = [$table_text];
+                } else {
+                    $row_texts = array_slice(
+                        preg_split($row_marker_regex, $table_text), 
+                        1
+                    );
+                }
 
-                var_dump($row_text);
-                var_dump($new_row);
+                for ($j = 0; $j < $row_count; $j++) {
 
-                $rows[] = $new_row;
+                    $row_text = $row_texts[$j];
+
+                    // 1 engine serial number per row
+                    $bulletin_engine_serial_number = (preg_match('/(OH[A-Z]\d\d-[A-Z]\d\d\d\d)/', $row_text, $matches)) 
+                        ? $matches[1] : null;
+
+                    // 1 bulletin comment per row
+                    // [\S\s] means `.` but including newlines
+                    // \Z is the end of string in a multiline mode `m`
+                    // Using [\S\s]+? lazy match with non-capturing group containing as the last alternate end of string `\Z` 
+                    // is what allows one to "match until optional string or until end of string".
+                    $bulletin_comment = (preg_match('/(\d\d\/\d\d\/\d\d: [\S\s]+?)(?:^Service\s*Bulletin|^Caterpillar: *Confidential *Green|\Z)/m', $row_text, $matches)) 
+                        ? $matches[1] : null;
+
+                    // remove unnecessary spaces and newlines
+                    $bulletin_comment = (!is_null($bulletin_comment)) 
+                        ? trim(
+                            implode(
+                                ' ', 
+                                array_map(
+                                    'trim', 
+                                    array_filter(
+                                        explode('\n', $bulletin_comment)
+                                    )
+                                )
+                            )
+                        ) : null;
+
+                    $compliance_rows[] = [
+                        'FILE'                          => $compliance_report_file->getPathname(),
+                        'FILEPAGE'                      => $page_number,
+                        'FILETABLEINDEX'                => $i,
+                        'FILEROWINDEX'                  => $j,
+                        'PACKAGE SERIAL NUMBER'         => $package_serial_number,
+                        'PACKAGE NAME'                  => $package_name,
+                        'BULLETIN STATUS'               => $service_bulletin_statuses[$i],
+                        'BULLETIN DATE'                 => $service_bulletin_status_dates[$i],
+                        'BULLETIN NUMBER'               => $bulletin_numbers[$j],
+                        'BULLETIN ENGINE SERIAL NUMBER' => $bulletin_engine_serial_number,
+                        'BULLETIN COMMENTS'             => $bulletin_comment,
+                    ];
+
+                }
 
             }
 
         }
+        
+    } catch (\Exception $e) {
+
+        err("Error parsing this file: '{$compliance_report_file->getPathname()}'");
+        err("    Exception Message: {$e->getCode()} {$e->getMessage()}");
+        continue;
 
     }
-    
-} catch (\Exception $e) {
-
-    err("Error parsing this file: '$compliance_report_path'");
-    err("    Exception Message: {$e->getCode()} {$e->getMessage()}");
-    exit(1);
 
 }
+
+$writer = \League\Csv\Writer::createFromFileObject(new \SplTempFileObject());
+
+$writer->insertOne(array_keys($compliance_rows[0]));
+$writer->insertAll($compliance_rows);
+
+file_put_contents($output_csv_path, $writer);
+
+out("Extracted data from all PDFs in $compliance_report_directory to $output_csv_path");
