@@ -47,6 +47,8 @@ try {
         $page_number++;
         $page_text = $page->getText();
 
+        var_dump($page_text);
+
         // 1 package serial number per page
         $package_serial_number = (preg_match('/Package S\/N: *([^\s]+)/', $page_text, $matches)) 
             ? $matches[1] : null;
@@ -55,6 +57,9 @@ try {
         $package_name = (preg_match('/^Package Name: *([^\s]+)/m', $page_text, $matches)) 
             ? $matches[1] : null;
 
+        var_dump($package_serial_number);
+        var_dump($package_name);
+
         // there can be more than 1 service bulletin tables in a page, but there must be at least 1
         // or else we are skipping the page
         $table_count = preg_match_all('/^service *bulletins *(in *work|completed) *as *of *(\w{3} \w, \w{4})/mi', $page_text, $matches);
@@ -62,8 +67,11 @@ try {
         $service_bulletin_status_dates = $matches[2];
 
         var_dump($table_count);
-        var_dump($page_text);
-        
+
+        var_dump($service_bulletin_statuses);
+        var_dump($service_bulletin_status_dates);
+        var_dump($table_texts);
+
         if ($table_count < 1) {
             
             err("Skipping page $page_number for '$compliance_report_path' because there are no service bulletins.");
@@ -86,17 +94,6 @@ try {
 
         }
 
-        // should be 1 to 1 for pages
-        var_dump($package_serial_number);
-        var_dump($package_name);
-
-        // should be 1 to 1 for tables
-        var_dump($service_bulletin_statuses);
-        var_dump($service_bulletin_status_dates);
-
-        // every table has multiple rows
-        var_dump($table_texts);
-
         // for every table, we need to extract the rows
         for ($i = 0; $i < $table_count; $i++) {
 
@@ -105,6 +102,9 @@ try {
             // this tells us how many rows
             $row_count = preg_match_all('/^Service[\s]*Bulletin[\s]*(\d+\.\d+\/\d+(?: *[A-Za-z](?![A-Za-z0-9]))?)/m', $table_text, $matches);
             $bulletin_numbers = $matches[1];
+
+            var_dump($row_count);
+            var_dump($bulletin_numbers);
 
             if ($row_count < 1) {
                 err("Skipping table $i at page $page_number for '$compliance_report_path' because there are no rows.");
@@ -117,6 +117,9 @@ try {
                     1
                 );
             }
+
+            var_dump($row_texts);
+            exit;
 
             for ($j = 0; $j < $row_count; $j++) {
 
