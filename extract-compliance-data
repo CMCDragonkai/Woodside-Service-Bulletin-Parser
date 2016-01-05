@@ -1,8 +1,6 @@
 #!/usr/bin/env php
 <?php
 
-// extract-compliance-data './directory/to/compliance/reports' './path/to/output.csv'
-
 require __DIR__ . '/vendor/autoload.php';
 
 $compliance_report_directory = (isset($argv[1]) ? $argv[1] : null);

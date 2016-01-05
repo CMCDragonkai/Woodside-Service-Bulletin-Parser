@@ -1,7 +1,6 @@
 #!/usr/bin/env php
 <?php
 
-// extract-bulletin-data './directory/to/bulletins' './path/to/output.csv'
 // This takes a (potentially nested) directory of PDF files, and extracts the relevant data, and outputs a CSV file
 
 require __DIR__ . '/vendor/autoload.php';
