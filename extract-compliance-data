@@ -70,7 +70,7 @@ foreach (
                 ? $matches[1] : null;
 
             // 1 package name per page
-            $package_name = (preg_match('/^Package Name: *([^\s]+)/m', $page_text, $matches)) 
+            $package_name = (preg_match('/^Package Name: *(.+)$/m', $page_text, $matches)) 
                 ? $matches[1] : null;
 
             // there can be more than 1 service bulletin tables in a page, but there must be at least 1 or else we are skipping the page
