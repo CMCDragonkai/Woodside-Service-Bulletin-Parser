@@ -28,6 +28,7 @@ if (!is_dir($output_csv_directory) OR !is_writable($output_csv_directory)) {
     exit(1);
 }
 
+// can only run realpath on an existing file
 $compliance_report_directory = realpath($compliance_report_directory);
 $mime_type_parser = new \finfo(FILEINFO_MIME_TYPE);
 $pdf_parser = new \Smalot\PdfParser\Parser();
@@ -182,6 +183,8 @@ foreach (
         continue;
 
     }
+
+    out("Parsed '{$compliance_report_file->getPathname()}'");
 
 }
 
