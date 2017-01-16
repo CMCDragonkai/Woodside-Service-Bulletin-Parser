@@ -1,5 +1,5 @@
-Woodsidde Service Bulletin Parser
-=================================
+Woodside Service Bulletin Parser
+================================
 
 Note that all directories will be scanned recursively.
 
